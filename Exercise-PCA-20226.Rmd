@@ -1,0 +1,72 @@
+---
+title: "Exercise-PCA"
+author: "Bala"
+date: "22/03/2021"
+output: word_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+Answer the following:
+
+Compute the sample covariance matrix S
+Compute eigen values and eigen vectors of S
+Perform PCA
+What is your suggested first k− principal components. Explain through scree plot.
+Perform graphical analysis of k components.
+Can you make any inference using principle components.
+
+```{r}
+#loading libraries
+library(tidyverse)
+library(knitr)
+library(broom)
+library(ggfortify)
+```
+```{r}
+#loading dataset
+swiss %>% head(10) %>% knitr::kable()
+DATA <- swiss
+```
+```{r}
+# Sample Covariance matrix
+covmatrix <-  cov(DATA)
+covmatrix
+```
+```{r}
+#Eigen values and eigen vectors
+eigvals <- eigen(covmatrix)
+eigvals$values
+sum(eigvals$values)
+eigvals$vectors[,1]
+```
+```{r}
+#PCA
+comp <- prcomp(DATA)
+summary(comp)
+eigvals$vectors
+names(DATA)
+# Here PC1 covers 74.6 , PC2 18.1 and remaining constituting to 7.3
+```
+```{r}
+#Scree plot
+x <- c(1:6)
+y <- eigvals$values
+plot(x,y,type="l",main="scree plot")
+# Since there is the elbow bend at 2 , the suggested first k pricipal components are 2 i.e. 2
+```
+```{r}
+# Components
+PC <- as.matrix(DATA) %*% eigvals$vectors
+ggplot(PC,aes(PC[,1],PC[,2]))+
+  geom_point()
+```
+
+#Analysis from principal components
+PC1 and PC2 cumulative proportions captures up to 0.92 data and adding PC3 results in 0.98.
+
+
+
+
+
+  

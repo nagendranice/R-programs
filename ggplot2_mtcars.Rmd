@@ -1,0 +1,121 @@
+---
+title: "ggplot2_matcars"
+author: "Dr.Sampath"
+date: "30/01/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# loading library
+library(tidyverse)
+# Data Layer 
+ggplot(data = mtcars) 
+```
+```{r}
+# Aesthetic Layer 
+ggplot(data = mtcars, aes(x = hp, y = mpg, col = disp)) 
+```
+
+```{r}
+# Geometric layer 
+ggplot(data = mtcars,  
+       aes(x = hp, y = mpg, col = disp)) + geom_point() 
+```
+
+```{r}
+# Adding size 
+ggplot(data = mtcars,  
+       aes(x = hp, y = mpg, size = disp)) +
+  geom_point() 
+```
+
+```{r}
+# Adding color and shape 
+ggplot(data = mtcars,  
+       aes(x = hp, y = mpg, col = factor(cyl),  
+                          shape = factor(am))) + geom_point() 
+```
+
+```{r}
+# Histogram plot 
+ggplot(data = mtcars, aes(x = hp)) +
+       geom_histogram(binwidth = 5) 
+```
+
+
+```{r}
+# Facet Layer 
+p <- ggplot(data = mtcars,  
+            aes(x = hp, y = mpg,  
+                shape = factor(cyl))) + geom_point() 
+```
+
+```{r}
+# Separate rows according to transmission type 
+p + facet_grid(am ~ .)
+```
+
+```{r}
+# Separate columns according to cylinders 
+p + facet_grid(. ~ cyl) 
+```
+
+```{r}
+# Statistics layer 
+ggplot(data = mtcars, aes(x = hp, y = mpg)) + 
+                               geom_point() + 
+       stat_smooth(method = lm, col = "red")
+```
+
+```{r}
+# Coordinates layer: Control plot dimensions 
+ggplot(data = mtcars, aes(x = wt, y = mpg)) +
+                               geom_point() +
+      stat_smooth(method = lm, col = "red") +
+ scale_y_continuous("mpg", limits = c(2, 35),  
+                          expand = c(0, 0)) +
+  scale_x_continuous("wt", limits = c(0, 25), 
+            expand = c(0, 0)) + coord_equal() 
+```
+
+
+```{r}
+# Add coord_cartesian() to proper zoom in 
+ggplot(data = mtcars, aes(x = wt, y = hp, col = am)) +
+                        geom_point() + geom_smooth() +
+                        coord_cartesian(xlim = c(3, 6))
+```
+
+
+```{r}
+# Theme layer 
+ggplot(data = mtcars, aes(x = hp, y = mpg)) +
+         geom_point() + facet_grid(. ~ cyl) +
+        theme(plot.background = element_rect( 
+            fill = "black", colour = "gray"))
+```
+
+
+```{r}
+ggplot(data = mtcars, aes(x = hp, y = mpg)) +
+        geom_point() + facet_grid(am ~ cyl) + 
+        theme_gray()
+```
+
+
+
+
+
+
+
+
+
+
+
+

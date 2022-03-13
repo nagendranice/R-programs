@@ -1,0 +1,217 @@
+---
+title: "LinearModels_Intro"
+author: "Dr.Sampath"
+date: "Created January 6, 2021; updated `r format(Sys.time(), '%B %d, %Y at %H:%M:%S')`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Loading Library and Dataset
+library(tidyverse)
+#install.packages("ISLR")
+library(ISLR) # An Introduction to Statistical Learning: with Applications in R
+```
+
+
+```{r}
+# Load the dataset
+Advertising <- read.csv("Advertising.csv")
+head(Advertising)
+```
+
+Basic Visualization for modeling
+
+---
+```{r}
+plot(Sales ~ TV, data = Advertising, col = "dodgerblue", pch = 20, cex = 1.5,
+     main = "Advertising: Sales vs Television")
+```
+
+```{r}
+pairs(Advertising) #plotting selected columns
+```
+
+```{r}
+#install.packages("caret")
+library(caret)
+# Plotting Sales vs Other variables
+featurePlot(x = Advertising[ , c("TV", "Radio", "Newspaper")], y = Advertising$Sales)
+```
+
+```{r}
+#Boxplots
+par(mfrow=c(2,2), mar=c(4,4,2,0.5))  # divide graph area in 2 columns
+boxplot(Advertising$Sales, main="Sales",col="yellow")  # box plot for 'Sales'
+boxplot(Advertising$TV, main="TV",col="green")  # box plot for 'TV'
+boxplot(Advertising$Newspaper, main="Newspaper",col="blue")  # box plot for 'Newspaper'
+boxplot(Advertising$Radio, main="Radio",col="orange")  # box plot for 'Radio'
+
+```
+
+Shapiro-Wilks Test for Noramlity
+===
+In this test
+\[H_0: \text{The data is normal }\]
+\[H_1: \text{The data is NOT normal }\]
+If $p$ - value is < 0.1 then Reject $H_0$ otherwise accept $H_0.$
+
+```{r}
+#Check the normality of each column
+for (i in 1:ncol(Advertising)){
+  shapiro.test(Advertising[,i])$p.value %>%print()
+}
+```
+
+```{r}
+#Check the normality of multivariate data
+#install.packages("MVN")
+library(MVN)
+```
+```{r}
+result <-mvn(Advertising,  mvnTest = "mardia")
+result
+```
+```{r}
+Advertising[,2:3] %>% mvn(multivariatePlot = "contour"e)
+```
+
+
+ Basic Statistics
+---
+```{r}
+summary(Advertising) # Six point summary for each variable
+```
+```{r}
+# Computing Correlation plot
+round(cor(Advertising),3)
+```
+
+# Different way of visualization
+```{r}
+#install.packages("corrplot")
+library(corrplot)
+corrplot(cor(Advertising),
+  method = "number",
+  type = "upper" # show only upper side
+)
+
+```
+
+
+```{r}
+# Histogram overlaid with kernel density curve
+ggplot(Advertising, aes(x=Sales)) + 
+    geom_histogram(aes(y=..density..),      # Histogram with density instead of count on y-axis
+                   binwidth=.5,
+                   colour="black", fill="white") +
+    geom_density(alpha=.2, fill="#FF6666") # Overlay with transparent density plot
+```
+
+
+
+Linear Model
+---
+
+```{r}
+# Our First Model
+mod_1 = lm(Sales ~ ., data = Advertising)
+# mod_1 = lm(Sales ~ TV + Radio + Newspaper, data = Advertising)
+```
+Model is
+$\text{Sales}=\beta_0+\beta_1*\text{TV}+\beta_2*\text{Radio}+\beta_3*\text{Newspaper}+\epsilon,$ where $\epsilon\sim N(0,\sigma^2)$
+
+
+and testing Hypothesis is given as
+
+\[H_0: \beta_0=\beta_1=\beta_2=\beta_3=0\]
+\[H_1: \beta_i\neq0\ \text{for some}\ i=0,1,2,3. \]
+
+```{r}
+summary(mod_1)
+```
+
+* `RSS` - Residual Sum of Squares: \[e^2_1+\cdots+e^2_n\]
+*  The estimate of $\sigma$ is known as the `Residual standard error`, and is given by the formula
+\[RSE=\sqrt{RSS/n-2}\]
+* The `RSE` is considered a measure of the `lack of fit` of the model.
+* $R^2$-`Statistics`: $R^2=1-{RSS\over TSS}$
+* $R^2$-`Statistics` measures the proportion
+of variability in $Y$ that can be explained using $X.$ An `$R^2-$Statistics` that is
+close to 1 indicates that a large proportion of the variability in the response has been explained by the regression. A number near 0 indicates that the regression did not explain much of the variability in the response.
+* `F-Statistics`: Since the testing Hypothesis give as
+esting Hypothesis is given as
+
+\[H_0: \beta_0=\beta_1=\cdots=\beta_p=0\]
+\[H_1: \beta_i\neq0\ \text{for some}\ i=0,1,2,p. \]
+\[F={(TSS-RSS)/p\over RSS/(n-p-1)}\]
+
+
+
+```{r}
+# Computing the residuals of the model
+res <- resid(mod_1)
+mean(res)
+RSS <- (res-mean(res))**2 %>% sum()
+RSE <- (var(res))**0.5
+sprintf("Residual Sum of Squares %.4f",RSS)
+sprintf("Residual Sum of Error %.4f",RSE)
+```
+```{r}
+# Computing TSS
+y <- Advertising$Sales
+TSS <- (y-mean(y))**2 %>% sum()
+Rsquared <- 1-(RSS/TSS)
+sprintf("Total Sum of Squares %.4f",TSS)
+sprintf("R Squared %.4f",Rsquared)
+```
+
+From the summary, we can conclude that the linear model is
+\[Sales=2.9389+0.0458*TV+0.1885*Radio-0.001*Newspaper+\epsilon\]
+
+Inference:
+
+- As $p$ - values of bias term (`Intercept`), `TV`, and `Radio` being almost zero, they are significant (Why?)
+
+- The variable `Newpaper` is NOT significant (why?)
+
+-  An increase of $\$1,000$ in the `TV` advertising budget is associated with an increase in sales by around 46 units.
+
+- An increase of $\$1,000$ in the `Radio` advertising budget is associated with an increase in sales by around 19 units.
+
+- How to explain `Intercept` term in the model?
+
+- Bias (`Intercept`) is the difference between the expected value of an estimator and the true value being estimated
+
+Plotting the model
+===
+```{r}
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(mod_1)
+```
+
+Inference from the plots:
+
+- **Residuals vs Fitted:** This plot shows if residuals have non-linear patterns.  If you find equally spread residuals around a horizontal line without distinct patterns, that is a good indication you don’t have non-linear relationships.
+
+- **Normal Q-Q plot:** This plot shows if residuals are normally distributed. 
+
+- **Scale-Location plot:** It’s also called Spread-Location plot. This plot shows if residuals are spread equally along the ranges of predictors. This is how you can check the assumption of equal variance (homoscedasticity). It’s good if you see a horizontal line with equally (randomly) spread points.
+
+- **Resudual vs Leverage:** This plot helps us to find influential cases (i.e., subjects) if any. Not all outliers are influential in linear regression analysis (whatever outliers mean). Even though data have extreme values, they might not be influential to determine a regression line. 
+```{r}
+shapiro.test(res)
+```
+
+
+
+
+
+
+
+

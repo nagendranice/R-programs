@@ -1,0 +1,65 @@
+---
+title: "mtcars"
+author: "Bala"
+date: "12/02/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r}
+mtcars
+data <- mtcars[,-c(8,9)]
+head(data)
+```
+
+
+#Model 1 = mpg ~ 
+##Basic plots
+```{r}
+model1<-lm(mpg~.,data)
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(model1)
+summary(model1)
+```
+
+#Model 2 = mpg ~ wt 
+
+```{r}
+model2 <- lm(mpg~ wt,data)
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(model2)
+summary(model2)
+```
+#Model 3 = mpg ~ wt + disp * hp
+```{r}
+model3 <- lm(mpg ~ wt + disp * hp,data)
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(model3)
+summary(model3)
+```
+#Model 4 = mpg ~ wt * wt + hp * wt
+```{r}
+model4 <- lm(mpg~ wt * wt + hp* wt,data)
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(model4)
+summary(model4)
+shapiro.test(model4$residuals)
+```
+```{r}
+library(MASS)
+bc <- boxcox(mpg ~ wt * wt + hp * wt,data= data)
+lam <- bc$x[which.max(bc$y)]
+lam
+```
+
+
+
+
+
+
+
+

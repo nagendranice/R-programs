@@ -1,0 +1,182 @@
+---
+title: "ggplot2_Intro"
+author: "Dr.Sampath"
+date: "29/01/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# description: Introduction session on ggplot2
+---
+
+# Create file plots
+```{r}
+#dir.create("plots")
+```
+
+
+```{r}
+# import data
+gapminder <- read.csv("https://raw.githubusercontent.com/resbaz/r-novice-gapminder-files/master/data/gapminder-FiveYearData.csv")
+
+```
+
+```{r}
+#Setup
+#options(scipen=999)  # turn off scientific notation like 1e+06
+# familarize yourself with data
+View(gapminder)
+#summary(gapminder)
+```
+
+
+```{r}
+# load the package
+library(tidyverse)
+```
+
+
+```{r}
+# population growth
+ggplot(data = gapminder,
+       mapping=aes(x=year,
+                   y=pop,
+                   color=continent))+
+  geom_point()
+```
+
+
+
+
+```{r}
+# Save some typing
+p <- ggplot(data = gapminder,
+            mapping=aes(x=year,
+                        y=pop, color=continent))+
+  geom_point()
+```
+
+```{r}
+# custom palette
+p +
+  scale_color_manual(values = c("blue","red","purple","green","orange"))
+```
+
+
+```{r}
+# modify y scale data
+p +
+  scale_y_log10()
+
+# modify x axis breaks
+# create a list of years
+unique_yrs <- unique(gapminder$year)
+# use the vectors for breaks
+p+
+  scale_x_continuous(breaks = unique_yrs)+
+  # simplify the y breaks
+  scale_y_continuous(breaks=c(0,100000000,200000000,500000000,1000000000), labels=c(0,"100 m","200 m","500 m","1 b"))
+
+```
+
+```{r}
+# modify y scale range
+p+
+  ylim(c(0,360000000))
+```
+
+```{r}
+# histograms lifeExp vs continent
+ggplot(gapminder,aes(x=lifeExp,fill=continent))+
+  geom_histogram(bins=20,position = "dodge")
+```
+
+```{r}
+# faceting
+ggplot(gapminder,
+       aes(x=lifeExp,
+           fill=continent))+
+  geom_histogram(bins=40)+
+  facet_wrap(~continent)
+```
+
+```{r}
+# faceting and theming
+ggplot(gapminder,
+       aes(x=lifeExp,
+           fill=continent))+
+  geom_histogram(bins=40)+
+  facet_wrap(~continent)+
+  theme(legend.position = "none")
+# use can try bottom, left, top
+```
+
+```{r}
+# faceting and theming
+ggplot(gapminder,
+       aes(x=lifeExp,
+           fill=continent))+
+  geom_histogram(bins=40)+
+  facet_wrap(~continent)+
+  theme_minimal()+
+  theme(legend.position = "none")+
+  xlab("Life Expectancy")+
+  ylab("Count")
+```
+
+
+```{r}
+# customizing scatter plots
+ggplot(gapminder,
+       aes(x=gdpPercap,
+           y=lifeExp))+
+  geom_point()+
+  labs(x="GDP Per Capita",
+       y="Life Expectancy",
+       title="How does GDP realate to Life Expectancy")+
+  theme_bw()
+```
+
+```{r}
+# customizing scatter plots
+ggplot(gapminder,
+       aes(x=gdpPercap,
+           y=lifeExp))+
+  geom_point(aes(colour=continent))+
+  scale_x_log10()+
+  labs(x="GDP Per Capita",
+       y="Life Expectancy",
+       title="How does GDP realate to Life Expectancy")+
+  theme_bw()
+```
+
+```{r}
+# save a plot with command
+ggsave("plots/GDPLifeExp.png", width=20,heigh=15, units = "cm")
+```
+
+```{r}
+# more geoms
+# bar plots
+ggplot(gapminder,
+       aes(x=continent))+
+  geom_bar()
+```
+
+
+```{r}
+# boxplots
+#ggplot(gapmider,aes(x=continent,y=lifeExp))+
+ # geom_boxplot()+
+  #theme(axis.text.x = element_text(angle=45))
+```
+
+
+
+
+
+

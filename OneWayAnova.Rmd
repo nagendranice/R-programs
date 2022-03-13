@@ -1,0 +1,340 @@
+---
+title: "ANOVA_Intro"
+author: "Dr.Sampath"
+date: "22/02/2021"
+output: html_document
+---
+
+```{r}
+#EDA
+#Correlation plot
+#Scatter plot
+#Histogram
+#boxplot
+#pichart
+#Frequency curve
+
+#Linear Models
+#Logistic regression
+#Confusion Matrix
+#Sensitivity and specificity
+
+
+#clustering
+#Canonical correlation 
+#Discriminate Analysis
+
+#R shiny
+
+Word or pdf
+par function for plots
+references
+plagiarism check
+logistic model
+tableate the models()
+
+
+future50
+independence100
+top250
+```
+```{r}
+# R Shiny Dashboard
+```
+
+```{r}
+library(shiny)
+library(shinydashboard)
+library(DT)
+```
+```{r}
+ui <- dashboardPage(
+  dashboardHeader(title = "Dashboard"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Future50", tabName = "future50_cleaned", icon = icon("tree")),
+      menuItem("table",tabname="future50_cleaned",icon=icon("car"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem("future50_cleaned",
+              fluidPage(
+                h1("future50_cleaned"),
+                dataTableOutput("future50table")
+                
+              )
+      )
+      
+    ),tabItem("future50_cleaned",
+              box(plotOutput("correlation_plot"),width = 8),
+              box(
+                selectInput("features","Features:",
+                            c("Sales","yoy_sales","yoy_units")),width = 4
+              )
+              
+              
+    ),
+    skin = c("green")))
+server <- function(input, output){
+  output$correlation_plot <- renderPlot({
+    plot(future50_cleaned$Rank,future50_cleaned[[input$features]],col="blue",xlab = "Rank",ylab = "Feature")
+  })
+  output$future50table <- renderDataTable(future50_cleaned)
+}
+shinyApp(ui, server)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This lecture highly benefited from the blog [Stats and R](https://statsandr.com/blog/anova-in-r/).
+
+ANOVA
+===
+
+**ANOVA** (ANalysis Of VAriance) is a statistical test to determine whether two or more population means are different. In other words, it is used to compare two or more groups to see if they are *significantly different*.
+
+Although ANOVA is used to make inference about means of different groups, the method is called “analysis of variance”. It is called like this because it compares the “between” variance (the variance between the different groups) and the variance “within” (the variance within each group). If the between variance is significantly larger than the within variance, the group means are declared to be different. Otherwise, we cannot conclude one way or the other.
+
+We will discuss One-way ANOVA in this lecture.
+
+Data
+===
+
+For this class we use 'penguins` dataset, which can be accesed from 'palmerpenguins' package
+
+```{r}
+# Loading required library
+#install.packages("palmerpenguins")
+library(palmerpenguins)
+library(tidyverse)
+library(lattice)
+library(car)
+```
+
+```{r}
+head(penguins)
+```
+
+```{r}
+dat <- penguins %>% 
+  select(species,flipper_length_mm)
+```
+
+
+
+```{r}
+summary(dat)
+```
+
+Flipper length varies from 172 to 231 mm, with a mean of 200.9 mm. There are respectively 152, 68 and 124 penguins of the species Adelie, Chinstrap and Gentoo.
+
+```{r}
+ggplot(dat)+
+  aes(species,flipper_length_mm,color=species)+
+  geom_jitter()+
+  theme(legend.position="none")+
+  labs(title="Species vs Flipper Length")
+  
+```
+Here, the factor is the `species` variable which contains 3 groups (Adelie, Chinstrap and Gentoo).
+
+Testing Hypothesis
+===
+
+- Study whether measurements are similar across different modalities of **categorical** variable
+- Compare the impact of the different levels of a categorical variable on **quantitative** variable
+
+The null and alternative hypothesis of an ANOVA are:
+- $H_0:$ The three species are equal in terms of flipper length
+- $H_1:$ At least one mean is different.
+
+ Residuals following normal distribution
+ 
+Assumptions of ANOVA
+===
+
+The basic assumptions of ANOVA
+
+- **Variable type**: ANOVA requires a mix of one continuous quantitative dependent variable and one qualitative independent variable (with at least 2 levels which will determine the groups to compare).
+- **Independence**: the data, collected from a representative and randomly selected portion of the total population, should be independent. 
+- **Normality**: Residuals2 should follow approximately a normal distribution. 
+- **Equality of variances**: the variances of the different groups should be equal in the populations (an assumption called *homogeneity* of the variances, or even sometimes referred as *homoscedasticity*, as opposed to heteroscedasticity if variances are different across groups). 
+- This assumption can be tested graphically (boxplot or dotplot), or more formally via the Levene’s test (`leveneTest(variable ~ group)` from the `{car}` package) or Bartlett’s test, among others. 
+
+We can check above assumptions on given dataset.
+
+- We have mix of the two types of variables.
+- Independence of the observations is assumed as data have been collected from a randomly selected portion of the population and measurements within and between the 3 samples are not related.
+- Normality:
+```{r}
+res_aov <- aov(flipper_length_mm ~ species,data=dat
+               )
+```
+
+We can check normality visually:
+```{r}
+par(mfrow=c(1,2)) # combine plots
+
+# histogram
+hist(res_aov$residuals)
+
+qqnorm(res_aov$residuals,xlab = "norm quantiles")
+```
+
+```{r}
+shapiro.test(res_aov$residuals)
+```
+ Either by observing plots or `shapiro.test()` results, we can conclude that the residuals are normal.
+
+- Equality of variances -homogeneity
+
+Visually, we have
+```{r}
+# Boxplot
+boxplot(flipper_length_mm ~ species, data=dat)
+```
+
+```{r}
+# Dotplot from lattice library
+dotplot(flipper_length_mm ~ species, data =dat)
+```
+Both the boxplot and the dotplot show a similar variance for the different species.  If you are not convince, you can check through statistic test known as `levenseTest()`
+
+Testing Hypothesis for Levense Test:
+
+$H_0:$ Variances are equal
+$H_1:$ at least one varaince is different
+
+```{r}
+# Levene's test from car library
+leveneTest(flipper_length_mm ~ species, data=dat)
+```
+
+The p-value being larger than the significance level of 0.05, we do not reject the null hypothesis, so we cannot reject the hypothesis that variances are equal between species (p-value = 0.719).
+
+
+There is another way of checking the normality and homogeneity.
+```{r}
+par(mfrow=c(1,2))
+
+# 1. Homogeneity of variances
+plot(res_aov, which = 1)
+
+# 2. Normality
+plot(res_aov, which = 2)
+```
+
+
+ANOVA
+===
+
+We showed that all assumptions of the ANOVA are met. We can thus proceed to the implementation of the ANOVA in R, but first, let’s do some preliminary analyses to better understand the research question.
+
+Some visualization
+
+```{r}
+ggplot(dat)+
+  aes(species,flipper_length_mm,color=species)+
+  geom_boxplot()+
+  theme(legend.position="none")+
+  labs(title="Box plots across the Groups")
+```
+
+The boxplots above show that, at least for our sample, penguins of the species `Gentoo` seem to have the biggest flipper, and `Adelie` species the smallest flipper.
+
+
+Some statistics:
+
+```{r}
+group_by(dat, species) %>% 
+     summarise(
+            mean = mean(flipper_length_mm,na.rm=TRUE),
+            sd = sd(flipper_length_mm,na.rm=TRUE)
+            )
+```
+Mean is also the lowest for `Adelie` and highest for `Gentoo`. Boxplots and descriptive statistics are, however, not enough to conclude that flippers are significantly different in the 3 populations of penguins.
+
+
+ANOVA in R can be done in several ways, of which two are presented below:
+
+```{r}
+# 1st method
+oneway.test(flipper_length_mm ~ species,
+            data = dat,
+            var.equal = TRUE # assuming equl variances
+            )
+```
+
+
+```{r}
+# 2nd method:
+res_aov <- aov(flipper_length_mm ~ species,
+               data = dat)
+summary(res_aov)
+```
+
+As you can see from the two outputs above, the test statistic  and the p-value are exactly the same for both methods, which means that in case of equal variances, results and conclusions will be unchanged.
+
+Inference:
+
+- Given that the p-value is smaller than 0.05, we reject the null hypothesis, so we reject the hypothesis that all means are equal.
+- We can conclude that **at least one species is different than the others in terms of flippers length** (p-value < 2.2e-16).
+
+
+Post-hoc Test
+===
+
+Most of the time, when we showed that at least one group is different, we are also interested in knowing which one(s) is(are) different. Results of an ANOVA, however, does NOT tell us which group(s) is(are) different from the others. To test this, we need to use other types of test, referred as post-hoc tests or multiple pairwise-comparison tests. 
+
+In order to see which group(s) is(are) different from the others, we need to compare groups 2 by 2. In practice, since there are 3 species, we are going to compare species 2 by 2 as follows:
+
+- Chinstrap versus Adelie
+- Gentoo vs. Adelie
+- Gentoo vs. Chinstrap
+
+To do this we have two statistical tests namely: **Tukey HSD** and **Dunnett's** tests:
+
+- Tukey HSD is used to compare **all groups** to each other (so all possible comparisons of 2 groups).
+
+- Dunnett is used to make comparisons with a **reference group**.
+
+Tukey HSD test
+===
+
+```{r}
+#install.packages("multcomp)
+
+library(multcomp)
+# Tukey HSD test:
+post_test <- glht(res_aov,
+  linfct = mcp(species = "Tukey")
+)
+summary(post_test)
+```
+
+In the output of the Tukey HSD test, we are interested in the table displayed after `Linear Hypotheses`:, and more precisely, in the first and last column of the table. The first column shows the comparisons which have been made; the last column (`Pr(>|t|)`) shows the adjusted p-values for each comparison (with the null hypothesis being the two groups are equal and the alternative hypothesis being the two groups are different).
+
+It is these adjusted p-values that are used to test whether two groups are significantly different or not, and we can be confident that the entire set of comparisons collectively has an error rate of 0.05.
+
+The results of the post-hoc test can be visualized with the `plot()` function:
+
+```{r}
+par(mar = c(3, 8, 3, 3))
+plot(post_test)
+```
+We see that the confidence intervals do not cross the zero line, which indicate that all groups are significantly different.
+
+Note that the Tukey HSD test can also be done in R with the `TukeyHSD()` function:
+```{r}
+Tk <- TukeyHSD(res_aov)
+Tk
+```
+
+```{r}
+plot(Tk)
+```
+
+
+

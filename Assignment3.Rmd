@@ -1,0 +1,129 @@
+---
+title: "AssignmentIII"
+author: "Bala"
+date: "16/02/2021"
+output:
+  word_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r}
+library(MASS)
+library(tidyverse)
+mydata<- MASS::Boston
+#attach(Boston)
+#mydata
+```
+
+**Number of observations and columns
+```{r}
+nrow(mydata)
+ncol(mydata)
+```
+** Structure of the data
+```{r}
+str(mydata)
+```
+** Top and bottom of the data
+```{r}
+head(mydata)
+tail(mydata)
+```
+** Basic visualization
+```{r}
+plot(crim ~ rad, data = mydata, col = "dodgerblue", pch = 20, cex = 1.5,
+     main = "Boston: Crim vs Rad")
+```
+```{r}
+summary(Boston)
+```
+```{r}
+library(corrplot)
+corr <- cor(Boston)
+corrplot(corr,type = "full")
+```
+** boxplot on a few variables
+```{r}
+par(mfrow= c(2,2))
+boxplot(mydata$rad, main="Index of Access to Radial Highways",col = "red")
+boxplot(mydata$zn, main="Landzone",col = "yellow")
+boxplot(mydata$medv, main="Median val of occupies homes",col="green")
+boxplot(mydata$dis,main="Mean of distances between employment centres",col = "blue")
+```
+scatter plot
+```{r}
+ggplot(Boston,aes(x=dis, y=crim))+ geom_point()+labs(title = 'Dis')
+```
+```{r}
+summary(mydata$crim)
+```
+```{r}
+require(ggplot2)
+require(plotly)
+plot_ly(data = Boston, x = ~tax, y = ~crim)
+```
+```{r}
+library(caret)
+featurePlot(x= mydata[,c("dis","tax","zn","rad","black","lstat","ptratio","medv")],y= mydata$crim)
+```
+```{r}
+pairs(Boston)
+```
+
+```{r}
+library(ggcorrplot)
+corr=round(cor(Boston),1)
+ggcorrplot(corr,hc.order= TRUE,lab= TRUE)
+```
+```{r}
+#Model1
+mod1 <- lm(crim~.,Boston)
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(mod1)
+summary(mod1)
+shapiro.test(mod1$residuals)
+```
+
+```{r}
+#Model2
+mod2 <- lm(crim~dis +rad +medv, mydata)
+par(mfrow=c(2,2),mar=c(4,4,2,0.5))
+plot(mod2)
+summary(mod2)
+```
+```{r}
+m1<-boxcox(crim~dis+rad+medv,data=mydata)
+b1<- m1$x[which.max(m1$y)]
+mydata$y<- ((mydata$crim)^b1-1/b1)
+bcm1<-lm(y~dis + rad + medv,data= mydata)
+summary(bcm1)
+plot(bcm1)
+shapiro.test(bcm1$residuals)
+```
+** Shapiro test
+```{r}
+for (i in 1:ncol(mydata)){
+  shapiro.test(mydata[,i])$p.value %>%print()}
+```
+```{r}
+step.model <- stepAIC(mod1,direction = "backward",trace = TRUE)
+summary(step.model)
+```
+```{r}
+broom::glance(bcm1)%>% dplyr::select(AIC,BIC)
+```
+
+
+
+```{r}
+test_data <- sample_n(mydata,5)
+test_data
+distPred <- predict(bcm1,test_data,interval = "confidence",level=0.9)
+distPred <- (b1*distPred+1)**(1/b1)
+
+actuals_preds <- data.frame(cbind(actuals=test_data$crim, predicteds=distPred))  
+actuals_preds
+```
+

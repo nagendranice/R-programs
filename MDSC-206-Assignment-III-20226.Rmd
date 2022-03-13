@@ -1,0 +1,152 @@
+---
+title: "MDSC-206-Assignment-IV-20226"
+author: "Bala"
+date: "25/02/2021"
+output: word_document
+editor_options: 
+  chunk_output_type: inline
+---
+Assignment-IV:
+===
+This assignment for 20 Marks
+
+ **Answer the following for the dataset 'ToothGrowth' from CRAN**
+ 
+- Perform Exploratory Data Analysis (must include scatter plots, box-plots) (5 Marks)
+- Choose your qualitative and quantitative variables in given data and perform One-Way ANOVA (5 Marks)
+- Choose your variables from the data to perform Two-Way ANOVA (5 Marks)
+- Presentation (5 Marks)
+  
+```{r}
+#Loading the required libraries
+library(tidyverse)
+library(car)
+library(lattice)
+library(ggplot2)
+```
+```{r}
+head(ToothGrowth)
+glimpse(ToothGrowth)
+```
+There are 60 Observations and 3 features. We will take two features from the data namely `len` and `dose`
+
+
+```{r}
+mydata<- ToothGrowth 
+head(mydata)
+```
+The data with all the three features...
+
+
+
+```{r}
+summary(mydata)
+```
+```{r}
+#Scatterplot
+ggplot(mydata)+aes(dose,len,color=supp)+geom_point()+labs(title = "Len vs Dose")
+```
+For 0.5 mg/ml dosage, Length of the teeth varied between each guinea pig from 1 to 21,Not 
+For 1.0 mg/ml dosage, Length of the teeth varied between each guinea pig
+from 12 to 27,
+For 2.0 mg/ml dosage, Length of the teeth varied between each guinea pig
+from 15 to 35...
+All these are not exactly conclusive as there are many outliers....
+In conclusion, The more the dosage higher the growth of length.
+```{r}
+#Boxplot
+par(mfrow=c(1,3))
+boxplot(mydata$len,main="Length of the Teeth",col = "red")
+```
+The black line shows the mean of the data, and there are many outliers in length...
+
+
+
+
+```{r}
+mydata$supp<- as.factor(mydata$supp)
+mydata$dose<- as.factor(mydata$dose)
+
+```
+Converting the doses to factors as we just have 3 classes 0.5 , 1 , 2...
+
+
+
+
+
+One Way ANOVA
+===
+```{r}
+data1 <- ToothGrowth %>% 
+            select(len,supp)
+head(data1)
+```
+The null and alternative hypothesis of an ANOVA are:
+- $H_0:$ The effect of the two supplements effect on length of the teeth is equal(OJ growth = VC growth)
+- $H_1:$ Their effect on the teeth is not equal
+
+Residuals following normal distribution
+Equality of Variance 
+
+```{r}
+res_aov <- aov(len~supp,data=data1)
+summary(res_aov)
+```
+
+ Given that the p-value is greater than 0.05, we accept the null hypothesis, so we accept the hypothesis that the effect of two supplements on length of the teeth is equal
+
+```{r}
+par(mfrow=c(1,2))
+plot(res_aov,2)
+plot(res_aov,3)
+```
+
+```{r}
+hist(res_aov$residuals)
+
+qqnorm(res_aov$residuals,xlab = "norm quantiles")
+```
+
+```{r}
+shapiro.test(res_aov$residuals)
+```
+ Either by observing plots or `shapiro.test()` results, we can conclude that the residuals are normal. 
+
+Testing Hypothesis for Levense Test:
+
+- $H_0:$ Variances are equal
+- $H_1:$ at least one variance is different
+```{r}
+leveneTest(len~supp,data=data1)
+```
+The p-value being larger than the significance level of 0.05, we do not reject the null hypothesis, so we cannot reject the hypothesis that variances are equal between supplements (p-value = 0.275).
+```{r}
+res_aov2 <- aov(len~supp*dose,data=mydata)
+summary(res_aov2)
+```
+As p-values are near to zero for two factors, we reject the null hypothesis. Thus there is a significance difference between in the popuplation mean across the factors.
+```{r}
+hist(res_aov2$residuals)
+```
+
+```{r}
+shapiro.test(res_aov2$residuals)
+```
+By looking at the pvalue we can say that it is normal
+```{r}
+leveneTest(len~supp*dose,data = mydata)
+```
+pvalue is greater than 0.05 therefore variances are equal...
+```{r}
+par(mfrow=c(1,2))
+plot(res_aov2,2)
+plot(res_aov2,3)
+```
+
+Conclusions:
+-> The higher the dosage the higher the growth of length of teeth...
+-> The effect of two supplements is nearly same for above 2 mg/ml cases.
+
+
+
+

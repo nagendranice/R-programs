@@ -1,0 +1,163 @@
+---
+title: "MDSC-202-Assignment-20232"
+author: "Venkat"
+date: "24/02/2021"
+output: html_document
+---
+```{r}
+#Uploading the required libraries
+
+library(tidyverse)
+library(gridExtra)
+library(funModeling)
+```
+
+```{r}
+mydata<- read.csv("/home/nagendra/Downloads/CardioGoodFitness.csv")
+head(mydata)
+```
+
+```{r}
+names(mydata)
+dim(mydata)
+```
+```{r}
+summary(mydata)
+```
+```{r}
+freq(mydata)
+```
+```{r}
+grid.arrange(ggplot(mydata, aes(x=Age, y=Miles))+geom_point(),
+             ggplot(mydata, aes(Age))+geom_histogram(),
+             ggplot(mydata, aes(Age))+geom_density(),
+             ggplot(mydata, aes(Age, Miles))+geom_dotplot(binaxis='y', stackdir='center'), 
+             nrow=2, top='Age vs Miles')
+```
+
+```{r}
+grid.arrange(ggplot(mydata, aes(x=Usage, y=Miles))+geom_point(),
+             ggplot(mydata, aes(Usage))+geom_histogram(),
+             ggplot(mydata, aes(Usage))+geom_density(),
+             ggplot(mydata, aes(Usage, Miles))+geom_dotplot(binaxis='y', stackdir='center'), 
+             nrow=2, top='Usage vs Miles')
+```
+
+```{r}
+grid.arrange(ggplot(mydata, aes(x=Fitness, y=Miles))+geom_point(),
+             ggplot(mydata, aes(Fitness))+geom_histogram(),
+             ggplot(mydata, aes(Fitness))+geom_density(),
+             ggplot(mydata, aes(Fitness, Miles))+geom_dotplot(binaxis='y', stackdir='center'), 
+             nrow=2, top='Fitness vs Miles')
+```
+
+```{r}
+grid.arrange(ggplot(mydata, aes(x=Income, y=Miles))+geom_point(),
+             ggplot(mydata, aes(Income))+geom_histogram(),
+             ggplot(mydata, aes(Income))+geom_density(),
+             ggplot(mydata, aes(Income, Miles))+geom_dotplot(binaxis='y', stackdir='center'), 
+             nrow=2, top='Income vs Miles')
+```
+
+```{r}
+grid.arrange(ggplot(mydata, aes(x=Gender, y=Miles))+geom_bar(stat="identity"),
+             ggplot(mydata, aes(x=Gender, y=Miles))+geom_col(),
+             nrow=2, top='Gender vs Miles')
+```
+
+```{r}
+ggplot(mydata, aes(x=Product, y=Age, fill=Gender), position="fill")+geom_col()
+```
+
+##Encoding the categorical variables
+```{r}
+mydata$gender[mydata$Gender=="Male"] = 0
+mydata$gender[mydata$Gender=="Female"] = 1
+```
+
+```{r}
+mydata$mstatus[mydata$MaritalStatus=="Single"] = 0
+mydata$mstatus[mydata$MaritalStatus=="Partnered"] = 1
+```
+
+```{r}
+mydata$product[mydata$Product=="TM195"] = 0
+mydata$product[mydata$Product=="TM498"] = 1
+mydata$product[mydata$Product=="TM798"] = 2
+```
+
+
+Forward Modelling
+===
+```{r}
+smp_size <- floor(0.75 * nrow(mydata))
+set.seed(123)
+train_ind <- sample(seq_len(nrow(mydata)), size = smp_size)
+
+train <- mydata[train_ind, ]
+test <- mydata[-train_ind, ]
+
+nrow(train)
+nrow(test)
+head(train)
+head(test)
+```
+
+#Modeling
+```{r}
+mod_1 <- lm(Miles~Usage, data=train)
+summary(mod_1)
+
+mod_2 <- lm(Miles~Usage+Fitness, data=train)
+summary(mod_2)
+```
+
+```{r}
+mod_3 <- lm(Miles~Usage+Fitness+Income, data=train)
+summary(mod_3)
+```
+
+
+```{r}
+mod_4 <- lm(Miles~Usage+Fitness+mstatus, data=train)
+summary(mod_4)
+```
+
+```{r}
+mod_5 <- lm(Miles~Usage+Fitness+Age, data=train)
+summary(mod_5)
+```
+
+```{r}
+mod_6 <- lm(Miles~Usage+Fitness+gender, data=train)
+summary(mod_6)
+```
+
+```{r}
+mod_7 <- lm(Miles~Usage+Fitness+product, data=train)
+summary(mod_7)
+```
+
+mod_2 is best in forward modeling
+
+
+Backward Modelling
+===
+
+```{r}
+mod_8 <-lm(Miles~product+Age+gender+Education+mstatus+Usage+Fitness+Income, data=train)
+summary(mod_8)
+```
+
+
+```{r}
+mod_9 <- lm(Miles~Usage+Fitness+Education, data=train)
+summary(mod_9)
+```
+
+```{r}
+mod_10 <- lm(Miles~Usage+Fitness, data=train)
+summary(mod_10)
+```
+
+ mod_8 is the best model in backward modeling

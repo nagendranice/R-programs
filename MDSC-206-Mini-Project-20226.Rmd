@@ -1,0 +1,390 @@
+---
+title: "MiniProject"
+author: "Bala"
+date: "09/03/2021"
+output:
+  html_document: default
+  word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+#columns
+```{r}
+library(corrplot)
+library(caret)
+library(lattice)
+library(car)
+library(tidyverse)
+library(MASS)
+```
+
+1.age: The person’s age in years
+2.sex: The person’s sex (0 = female, 1 = male)
+3.cp: The chest pain experienced (Value 1: typical angina, Value 2: atypical angina, Value 3: non-anginal pain, Value 4: asymptomatic)
+trestbps: The person’s resting blood pressure (mm Hg on admission to the hospital)
+4.chol: The person’s cholesterol measurement in mg/dl
+5.fbs: The person’s fasting blood sugar (if > 120 mg/dl, 1 = true; 0 = false)
+6.restecg: Resting electrocardiographic measurement (0 = normal, 1 = having ST-T wave abnormality, 2 = showing probable or definite left ventricular hypertrophy by Estes’ criteria)
+7.thalach: The person’s maximum heart rate achieved
+exang: Exercise induced angina (1 = yes; 0 = no)
+8.oldpeak: ST depression induced by exercise relative to rest (‘ST’ relates to positions on the ECG plot)
+9.slope: the slope of the peak exercise ST segment (Value 1: upsloping, Value 2: flat, Value 3: downsloping)
+10.ca: The number of major vessels (0-3)
+11.thal: A blood disorder called thalassemia (1 = normal; 2 = fixed defect; 3 = reversable defect)
+12.target: Heart disease (0 = no, 1 = yes)
+
+- Basic Statistics (you may include summary of statistics, correlation matrix, ...)
+- EDA (Histograms, Scatterplots, Boxplots,....)
+- Linear Models (Choose your dependent and independent variables wisely)
+- ANOVA (Choose your classes and variable to perform ANOVA)
+- Logistic regression
+
+Basic Statistics and EDA
+-------
+```{r}
+heartdata1<- read.csv("/home/nagendra/Downloads/heart.csv")
+head(heartdata1)
+heartdata<- as_tibble(heartdata1)
+
+#Looking at the data columns and their importance with respect to the dependent variable target 
+```
+```{r}
+str(heartdata)
+```
+
+```{r}
+summary(heartdata)
+#Age here varied from 29 to 77 with 54 as average age
+#here average of gender is 0.6832 signifying most heart patients are of female category
+#chest pain varied from 0 to 3 level with 1 as average signifying only less patients have high chest pain levels
+#Blood pressure while resting varied from 94
+```
+
+```{r}
+
+corr<-cor(heartdata)
+corrplot(corr,method= "number",type= "full")
+# Here oldpeak and slope are negatively 58 % correlated and all other variables are not significantly correlated.
+```
+
+```{r}
+
+featurePlot(x=heartdata[,c("age","sex","cp","trestbps","chol","fbs","restecg","target")],y=heartdata$thalach)
+```
+
+```{r}
+ggplot(heartdata, aes(x=thalach)) + 
+    geom_histogram(aes(y=..density..),      # Histogram with density instead of count on y-axis
+                   binwidth=.5,
+                   colour="black", fill="white") +
+    geom_density(alpha=.2, fill="#FF6666") 
+```
+
+```{r}
+# Bar plot for target (yes or no)
+heartdata$target <- as.factor(heartdata$target)
+ggplot(heartdata, aes(x=heartdata$target, fill=heartdata$target)) + 
+  geom_bar() +
+  xlab("Heart Disease") +
+  ylab("Count") +
+  ggtitle("Analysis of Presence and Absence of Heart Disease") +
+  scale_fill_discrete(name = "Heart Disease", labels = c("Absence", "Presence"))
+
+```
+
+```{r}
+# Group the different ages in three groups (young, middle aged, old)
+young <- heartdata[which((heartdata$age<45)), ]
+middleaged <- heartdata[which((heartdata$age>=45)&(heartdata$age<55)), ]
+elderly <- heartdata[which(heartdata$age>55), ]
+groups <- data.frame(age_group = c("young","middle aged","elderly"), group_count = c(NROW(young$age), NROW(middleaged$age), NROW(elderly$age)))
+
+#ploting different age groups
+ggplot(groups, aes(x=groups$age_group, y=groups$group_count, fill=groups$age_group)) + 
+  ggtitle("Age Analysis") +
+  xlab("Age Group")  +
+  ylab("group Count") +
+  geom_bar(stat="identity") +
+  scale_fill_discrete(name = "Age Group", labels = c("Elderly", "Middle Aged", "Young"))
+```
+
+```{r}
+# Adding the age groups to the dataset
+heartdata <- cbind(heartdata, groups = ifelse((heartdata$age<45), 0, ifelse((heartdata$age>=45)&(heartdata$age<55), 1, 2)))
+heartdata$groups <- as.factor(heartdata$groups)
+# we will remove the age column as this is very generalised column and we have divided it, group, to include 
+# that in our analysis more specifically.
+
+heartdata = subset(heartdata, select = c(-age))
+# Discrete vs Discrete vs Discrete variable: age_group ~ target ~ sex
+ggplot(heartdata, aes(x= factor(heartdata$groups), y=heartdata$sex, colour=target)) + 
+  geom_boxplot(stat = "boxplot",
+               position = "dodge2") +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(width = 0.2) +
+  xlab("Age Groups") +
+  ylab("Gender") +
+  ggtitle("Analysis of gender with different age group with presence or absense of heart disease")
+```
+
+```{r}
+# Bar plot for sex
+ggplot(heartdata, aes(x= sex, fill=target)) + 
+  geom_bar() +
+  xlab("Gender") +
+  ylab("Gender Count") +
+  ggtitle("Analysis of Gender") +
+  scale_fill_discrete(name = "Heart disease", labels = c("No", "Yes"))
+```
+
+```{r}
+#cp (Chest Pain) variable Analysis
+# Bar plot for The chest pain experienced 
+ggplot(heartdata, aes(x= cp, fill=cp)) + 
+  geom_bar() +
+  xlab("Chest Pain Type") +
+  ylab("Count") +
+  ggtitle("Analysis of Chest Pain Experienced") +
+  scale_fill_discrete(name = "Chest Pain Type", labels = c("Typical angina pain", "Atypical angina pain", "Non-Anginal pain", "Asymptomatic pain"))
+
+```
+
+```{r}
+# Bar plot for The chest pain ~ target
+ggplot(heartdata, aes(x= cp, fill=target)) + 
+  geom_bar() +
+  xlab("Chest Pain Type") +
+  ylab("Count") +
+  ggtitle("Analysis of Chest Pain Experienced") +
+  scale_fill_discrete(name = "Heart disease", labels = c("No", "Yes"))
+```
+
+```{r}
+# Density graph for trestbps (resting blood pressure)
+ggplot(heartdata, aes(x = trestbps, fill = target)) +
+  geom_density(alpha=0.5) +
+  scale_fill_discrete(name = "Heart disease", labels = c("No", "Yes"))
+```
+
+```{r}
+# Density plot for oldpeak ~ target
+ggplot(heartdata, aes(x = oldpeak, fill = target)) +
+  geom_density(alpha=0.5) +
+  xlab("ST depression induced") +
+  ylab("Count") +
+  ggtitle("Analysis of ST depression induced and presence of heart disease") +
+  scale_fill_discrete(name = "Heart disease", labels = c("No", "Yes"))
+```
+
+```{r}
+# Density plot for thalach ~ target
+ggplot(heartdata, aes(x = thalach, fill = target)) +
+  geom_density(alpha=0.5) +
+  xlab("Maximum Heart Rate Achieved") +
+  ylab("Count") +
+  ggtitle("Analysis of relation of heart rate with presence of heart disease") +
+  scale_fill_discrete(name = "Heart disease", labels = c("No", "Yes"))
+
+```
+
+```{r}
+par(mfrow= c(2,4))
+#boxplot(heartdata$age, main="Age",col = "red")
+boxplot(heartdata$chol, main="Cholestrol",col = "yellow")
+boxplot(heartdata$thalach, main="Thalach",col="green")
+boxplot(heartdata$slope,main="Slope",col = "blue")
+#
+```
+
+```{r}
+tab= table(heartdata$sex)
+pie(tab,main="pie chart")
+
+#More Males in the population compared to females in the dataset
+```
+
+```{r}
+#Scatterplot
+plot <- ggplot(heartdata, aes(trestbps, chol))
+plot + geom_point(aes(colour = factor(cp)))
+```
+
+```{r}
+
+mod1<- lm(thalach~.,data=heartdata)
+par(mfrow=c(2,4))
+plot(mod1)
+summary(mod1)
+
+#Here our model is yielding very less Adjusted r square implying that it is not normal
+#Let's try another model
+```
+
+```{r}
+mod2<- lm(thalach ~ exang + slope + target + cp + trestbps + chol,data=heartdata)
+par(mfrow=c(2,4))
+plot(mod2)
+summary(mod2)
+#Here adjusted r square has increased but not significantly
+#We will go for another
+```
+```{r}
+mod3<- lm(thalach ~ groups * groups + exang*exang + slope * slope + target + cp * cp + chol + trestbps,data = heartdata)
+par(mfrow=c(2,4))
+plot(mod2)
+summary(mod3)
+#Here we yielded the same adj r square, looks like we reached the saturation point...
+```
+```{r}
+head(heartdata)
+```
+
+
+
+```{r}
+library(broom)
+summary_stats <- tbl_df(bind_rows(glance(mod1) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC),
+glance(mod2) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC),
+glance(mod3) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC)))
+summary_stats 
+#so this is the summary of the stats
+```
+
+```{r}
+bc<-boxcox(thalach~groups+cp+trestbps+chol+exang+slope+target
+,data=heartdata)
+lambda <- bc$x[which.max(bc$y)]
+lambda
+
+heartdata$y <- ((heartdata$thalach)^lambda-1/lambda)
+Newmodel <- lm(thalach~groups+cp+trestbps+chol+exang+slope+target,data=heartdata)
+summary(Newmodel)
+shapiro.test(Newmodel$residuals)
+
+glance(Newmodel) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC)
+#Even after applying boxcox we clearly see that there is no improvement in the adj r square 
+```
+
+```{r}
+data= sample_n(heartdata,10)#Taking some random samples from b_data
+predict(Newmodel,data)#Predicted values
+data$thalach#Actual values
+```
+
+```{r}
+step.model <- stepAIC(mod1,direction = "backward",trace = TRUE)
+summary(step.model)
+```
+
+ANOVA
+-------
+
+```{r}
+heartdata$cd=0
+ heartdata$cd[heartdata$cp==0] ="Zero"
+ heartdata$cd[heartdata$cp==1] ="One"
+ heartdata$cd[heartdata$cp==2] ="Two"
+ heartdata$cd[heartdata$cp==3] ="Three"
+ 
+
+```
+```{r}
+changer <- function(type){p_data =heartdata%>%filter(cp==type)
+return(sample_n(p_data,20))}
+
+```
+```{r}
+t_zero = changer(0)
+t_one = changer(1)
+t_two = changer(2)
+t_three=changer(3)
+adata = bind_rows(t_zero,t_one,t_two,t_three)
+dim(adata)
+
+```
+
+```{r}
+res_aov <- aov(thalach~ cd,data = adata)
+summary(res_aov)
+shapiro.test(res_aov$residuals)
+leveneTest(thalach~ cd, data=adata)
+#variances are not equal. Accept alternate hypothesis.
+```
+
+```{r}
+#$H_0:$ Variances are equal
+#$H_1:$ at least one varaince is different
+Final<- TukeyHSD(res_aov)
+Final
+plot(Final)
+```
+
+
+Logistic Regression
+--------
+
+
+```{r}
+#We can have many threshold to classify the problem.We will find optimal using a package and use it
+#To check whether the Exercise Induced Angia is present or not using number of floroscopy induced arteries and another...
+```
+
+```{r}
+dim(heartdata)
+```
+
+```{r}
+# To have same output
+set.seed(123)
+# Indexing the sample data
+default_idx = sample(nrow(heartdata), 240)
+default_trn = heartdata[default_idx, ]
+default_tst = heartdata[-default_idx, ]
+dim(default_trn)
+```
+
+```{r}
+#Model using age ,trestbps,cholestorol , thalach , and oldpeak...
+
+model1 = glm(exang~groups+trestbps+chol+thalach+oldpeak,data=default_trn,family='binomial')
+model_n_pred = ifelse(predict(model1, type = "link") > 0.5, "1", "0")
+table_trn = table(predicted = model_n_pred, actual = default_trn$exang)
+predicted = predict(model1, default_trn, type="response")
+confusion_matrix = confusionMatrix(table_trn, positive = "1")
+c(confusion_matrix$overall["Accuracy"], 
+  confusion_matrix$byClass["Sensitivity"], 
+  confusion_matrix$byClass["Specificity"])
+#Here sensitivity is not at all significant which shows that the prediction of true positive is low...
+#let's go for next model
+```
+
+```{r}
+model2 = glm(exang~groups+thalach+oldpeak+target,data=default_trn,family='binomial')
+model_n_pred = ifelse(predict(model2, type = "link") > 0.5, "1", "0")
+table_trn = table(predicted = model_n_pred, actual = default_trn$exang)
+predicted = predict(model2, default_trn, type="response")
+confusion_matrix2 = confusionMatrix(table_trn, positive = "1")
+c(confusion_matrix2$overall["Accuracy"], 
+  confusion_matrix2$byClass["Sensitivity"], 
+  confusion_matrix2$byClass["Specificity"])
+#Improvement is apparent but not substantial
+#And hunt goes on for another
+
+```
+
+```{r}
+model3=glm(exang~groups+sex+cp+trestbps+chol+fbs+restecg+thalach+oldpeak+slope+ca+thal+target
+,data=default_trn,family='binomial')
+car::vif(model3)
+model_n_pred = ifelse(predict(model3, type = "link") > 0.001, "1", "0")
+table_trn = table(predicted = model_n_pred, actual = default_trn$exang)
+predicted = predict(model3, default_trn, type="response")
+confusion_matrix3 = confusionMatrix(table_trn, positive = "1")
+c(confusion_matrix3$overall["Accuracy"], 
+  confusion_matrix3$byClass["Sensitivity"], 
+  confusion_matrix3$byClass["Specificity"])
+#And here we go with so far the best model yielding the sensitivity at .66 and specificity at .89
+#So this is the best logistic model for now.
+```
+
+

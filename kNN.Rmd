@@ -1,0 +1,175 @@
+---
+title: "kNN"
+author: "Dr.Sampath"
+date: "15/04/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+setwd("D:/MDSC-206/ML Algorithms")
+```
+Topics Covered:
+
+- Basics in R
+  - Data types
+  - Operations
+  - Data Frames
+- EDA
+  - Basic Plots
+  - ggplot2
+  - GGally
+- Data Manipulation
+  - dplyr
+- Statistical Modelling
+  - Linear Regression
+    - Simple Regression
+    - Multiple Regression
+    - Multivariate Linear Regression
+    - ANOVA
+    - MANOVA
+  - Logistics Regression
+  - Multiple Logistic Regression
+  - Discriminant Analysis
+    - Linear Discriminant Analysis
+    - Quadratic Discriminant Analysis
+  - Principal Component Analysis
+  - Cluster Analysis
+    - K -means
+    - K- medoids
+    - Hierarchical 
+  - Canonical Clustering Analysis
+  - Identifying Outliers
+
+- Machine Learning
+  - kNN
+  - Naive Bayes
+  - Decision Trees
+  - Random Forest
+  - SVM ?
+  - Model Evaluation
+  - Case study
+- Package Development
+  - Hotelling $T^2$
+  - Simultaneous CIs
+
+kNN
+===
+
+- The KNN algorithm is a robust and versatile classifier that is often used as a benchmark for more complex classifiers such as Artificial Neural Networks (ANN) and Support Vector Machines (SVM).
+- KNN is a supervised learning algorithm
+- The KNN classifier is a **non-parametric** and **instance-based** learning algorithm.
+  - **Non-parametric** means it makes no explicit assumptions about the functional form of $y=f(x)$, avoiding the dangers of mismodeling the underlying distribution of the data.
+  - **Instance-based** learning means that our algorithm doesn't explicitly learn a model. Instead, it chooses to memorize the training instances which are subsequently used as “knowledge” for the prediction phase.
+  - **KNN is non-parametric, instance-based and used in a supervised learning setting**.
+
+How Does kNN work?
+===
+
+ KNN classifier performs the following steps for
+ given a positive integer $K,$ an unseen observation $x$ and a similarity metric $d$ (Euclidian/  Manhattan/Chebyshev/Hamming distance):
+ 
+- It runs through the whole dataset computing $d$ between $x$ and each training observation.
+- We'll call the $K$ points in the training data that are closest to $x$ the set $\mathcal{A}.$
+- It then estimates the conditional probability for each class, that is, the fraction of points in $\mathcal{A}$ with that given class label
+ \[P(y=j | X=x) = {1\over K}\sum_{i\in A}I(y^{(i)}=j) \]
+- Our input $x$ gets assigned to the class with the largest probability.
+-  `KNN searches the memorized training observations for the K instances that most closely resemble the new instance and assigns to it the their most common class.`
+
+How to choose $K$?
+===
+
+- $K$ must be odd
+- Its a hyperparameter
+- A small value for $K$ provides the most flexible fit, which will have low bias but high variance. 
+- Larger values of $K$ will have smoother decision boundaries which means lower variance but increased bias.
+```{r figurename, echo=FALSE, fig.cap="Bias-Variance Trade off", out.width = '50%'}
+knitr::include_graphics("biasvariance.png")
+```
+- **k-fold cross Validation**
+
+```{r, echo=FALSE, out.width = '50%'}
+knitr::include_graphics("k-fold.png")
+```
+
+-  Cross-validation can be used to estimate the test error associated with a learning method in order to evaluate its performance, or to select the appropriate level of flexibility.
+```{r}
+DATA <- read.csv("D:/MDSC-206/DataSets/wine.csv")
+head(DATA)
+names(DATA)
+library(tidyverse)
+glimpse(DATA)
+```
+
+```{r}
+DATA$Wine <- as.factor(DATA$Wine)
+table(DATA$Wine)
+#Let's check our explained variable distribution of origin
+round(prop.table(table(DATA$Wine)),2)
+```
+
+
+```{r}
+summary(DATA)
+```
+
+```{r}
+library(caret)
+data <- DATA
+index <- createDataPartition(data$Wine, p=0.7, list = FALSE)
+train <- data[index,]
+test <- data[-index,]
+```
+
+```{r}
+# Modelling
+#?trainControl()
+trn_ctrl <-trainControl(method = "repeatedcv", number = 10, repeats = 3)
+#?caret::train()
+model_knn <- train(Wine~.,data = train, method ="knn",
+                   trControl = trn_ctrl, 
+                   preProcess = c("center", "scale"), 
+                   tuneLength = 10)
+```
+
+```{r}
+model_knn
+```
+
+
+```{r}
+plot(model_knn)
+```
+
+```{r}
+prediction_knn <- predict(model_knn,newdata=test)
+confusionMatrix(prediction_knn, reference = test$Wine, positive = "2")
+```
+
+
+
+
+Reference
+
+- [Machine Learning with R](https://fderyckel.github.io/machinelearningwithr/index.html)
+- [Statistical Analysis with R](https://fcorowe.github.io/sl/)
+- [cs231n](https://cs231n.github.io/classification/#nn)
+
+
+Penguine Dataset:
+
+- Load the dataset
+- Remove NA
+- Split the data train and test
+- KNN on train: cv, repeatedcv, boot
+- Validate your results on test data.
+
+
+
+

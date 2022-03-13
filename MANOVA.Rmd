@@ -1,0 +1,118 @@
+---
+title: "MANOVA"
+author: "Dr.Sampath"
+date: "09/03/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+MANOVA
+===
+- **Multivariate analysis of variance (MANOVA)** is simply an ANOVA (Analysis of variance) with several dependent variables.
+- It's a generalization of the ANOVA.
+- In an ANOVA, we test for statistical differences on one continuous dependent variable by an independent grouping variable. 
+- The MANOVA continues this analysis by taking multiple continuous dependent variables and bundles them collectively into a weighted linear composite variable.
+- The MANOVA compares whether or not the newly created combination varies by the different levels, or groups, of the independent variable.
+
+
+Assumptions of MANOVA
+===
+
+MANOVA makes the following assumptions about the data:
+
+- **Adequate sample size**. Rule of thumb: the n in each cell > the number of outcome variables.
+- **Independence of the observations**. Each subject should belong to only one group. There is no relationship between the observations in each group. Having repeated measures for the same participants is not allowed. The selection of the sample should be completely random.
+- **Absense of univariate or multivariate outliers**
+- **Multivariate normality** The R function `mshapiro_test( )`[in the rstatix package] can be used to perform the Shapiro-Wilk test for multivariate normality.
+- **Absence of multicollinearity** The dependent (outcome) variables cannot be too correlated to each other. No correlation should be above r = 0.90 [Tabachnick and Fidell (2012)}.
+- Linearity between all outcome variables for each group.
+- **Homogeneity of variances** The Levene’s test can be used to test the equality of variances between groups. Non-significant values of Levene’s test indicate equal variance between groups.
+- **Homogeneity of variance-covariance matrices** The **Box’s M Test** can be used to check the equality of covariance between the groups. This is the equivalent of a multivariate homogeneity of variance. This test is considered as highly sensitive. Therefore, significance for this test is determined at alpha = 0.001.
+
+```{r}
+# Loading libraries
+library(tidyverse)
+```
+
+
+```{r}
+DATA <- iris
+head(DATA)
+```
+
+
+
+
+```{r}
+Y <- DATA %>% select(contains("Length"))
+Y <- as.matrix(Y)
+```
+
+
+
+```{r}
+G <- DATA %>% select(Species)
+G <- as.vector(G)
+```
+
+
+```{r}
+# MANOVA test 
+model1 = manova(cbind(Sepal.Length, Petal.Length) ~ Species,data = DATA)
+summary(model1)
+# Default "pillai", Other tests are "Wilks","Hotelling-Lawley", and "Roy"
+```
+
+
+
+Qns: 
+- Across the gropus residulas must be normal
+- Check equality of covariance matrices
+
+
+
+```{r}
+shapiro.test(model1$residuals)
+## plot QQ plot and check
+## Equality of covariance matrices
+
+
+```
+
+$H_0:$ Covariance matrices are equal across the groups
+```{r}
+# install.packages("heplots")
+library(heplots)
+
+res <- boxM(DATA[,1:4], DATA[, "Species"])
+plot(res, gplabel="Species")
+```
+
+
+
+
+
+
+
+
+
+References:
+
+- [https://sassystatistician.wordpress.com/2017/11/25/manova-multivariate-analysis-pt-ii/](Test statistics for MANOVA)
+- [https://www.statology.org/manova-in-r/](How to Conduct a MANOVA in R)
+- [https://www.datanovia.com/en/lessons/one-way-manova-in-r/](One-Way MANOVA)
+- [https://www.rdocumentation.org/packages/heplots/versions/1.3-8/topics/boxM](Box-M Test)
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,33 @@
+---
+title: "Linearmodels"
+author: "Bala"
+date: "12/02/2021"
+output: word_document
+editor_options: 
+  chunk_output_type: console
+---
+on mtcars dataset implement the linear regression model
+```{r}
+library(tidyverse)
+library(ISLR)
+```
+```{r}
+Advertising <- read.csv("/home/nagendra/Downloads/Advertising.csv")
+head(Advertising)
+```
+```{r}
+plot(Sales ~ TV, data = Advertising, col = "dodgerblue", pch = 20, cex = 1.5,
+     main = "Advertising: Sales vs Television")
+```
+```{r}
+pairs(Advertising)
+```
+```{r}
+library(caret)
+featurePlot(x = Advertising[ , c("TV", "Radio", "Newspaper")], y = Advertising$Sales)
+
+```
+```{r}
+
+```
+

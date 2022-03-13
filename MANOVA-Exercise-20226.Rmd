@@ -1,0 +1,58 @@
+---
+title: "MANOVA-Exercise"
+author: "Bala"
+date: "23/03/2021"
+output: word_document
+editor_options: 
+  chunk_output_type: inline
+---
+```{r}
+#loading libraries
+library(tidyverse)
+library(palmerpenguins)
+library(heplots)
+library(rstatix)
+
+```
+```{r}
+#loading dataset
+data <- penguins
+head(data)
+```
+
+```{r}
+#Normality of variables
+data %>%
+  group_by(species) %>%
+  shapiro_test(bill_length_mm, bill_depth_mm,flipper_length_mm,body_mass_g) %>%
+  arrange(variable)
+#Only Gentoo is not normal, remaining all are normal
+```
+
+
+
+```{r}
+#H0: mean of bill length , bill depth , body mass and flipper length are equal for all the species
+#H1: atleast one mean is not equal
+# MANOVA test 
+mod1 = manova(cbind(bill_length_mm,bill_depth_mm, body_mass_g , flipper_length_mm) ~ species,data = data)
+summary(mod1)
+#We reject our null hypothesis and accepth alternate hypothesis as p value is significantly less and almost zero
+```
+
+
+
+```{r}
+shapiro.test(mod1$residuals)
+#Residuals are not normal as p value is near to zero
+```
+
+$H_0:$ Covariance matrices are equal across the groups
+```{r}
+res <- boxM(data[,c(3,4,5,6)], data$species)
+res
+#Here violation of the assumption of homogenity of variance can be observed as p value is tending to zero
+plot(res, gplabel="species")
+#Intervals of various species with respect to four variables bill length, bill depth , body mass and flipper length can be seen
+```
+

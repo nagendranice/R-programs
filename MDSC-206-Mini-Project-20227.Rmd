@@ -1,0 +1,464 @@
+---
+title: "Project"
+author: "Mahesh"
+date: "3/9/2021"
+output:
+  word_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(tidyverse)
+library(ISLR)
+library(MASS)
+```
+
+- Basic Statistics (you may include summary of statistics, correlation matrix, ...)
+- EDA (Histograms, Scatterplots, Boxplots,....)
+- Linear Models (Choose your dependent and independent variables wisley)
+- ANOVA (Choose your classes and variable to perform ANOVA)
+- Logistic regression
+
+1.Basic statistics
+
+```{r}
+hrtdata <-  read.csv("C:/Users/Mahesh/Desktop/Sampath sir/Datasets/heart.csv")
+head(hrtdata)
+```
+
+1.age: The person’s age in years
+2.sex: The person’s sex (1 = male, 0 = female)
+3.cp: The chest pain experienced (Value 0: typical angina, Value 1: atypical angina, Value 2: non-anginal pain, Value 3: asymptomatic)
+4.trestbps: The person’s resting blood pressure (mm Hg on admission to the hospital)
+5.chol: The person’s cholesterol measurement in mg/dl
+6.fbs: The person’s fasting blood sugar (if > 120 mg/dl, 1 = true; 0 =false)
+7.restecg: Resting electrocardiographic measurement (0 = normal, 1 = having ST-T wave abnormality, 2 = showing probable or definite left ventricular hypertrophy by Estes’ criteria)
+8.thalach: The person’s maximum heart rate achieved
+9.exang: Exercise induced angina (1 = yes; 0 = no)
+10.oldpeak: ST depression induced by exercise relative to rest (‘ST’ relates to positions on the ECG plot)
+11.slope: the slope of the peak exercise ST segment (Value 1: upsloping, Value 2: flat, Value 3: downsloping)
+12.ca: The number of major vessels (0-3)
+13.thal: A blood disorder called thalassemia (1 = normal; 2 = fixed defect; 3 = reversable defect)
+14.target: Heart disease (0 = no, 1 = yes)
+
+```{r}
+# changing the name of  the variable
+names(hrtdata)[1] = "age"
+head(hrtdata)
+```
+
+
+```{r}
+#Converting the data into tibble form
+heartdata = as_tibble(hrtdata)
+```
+
+```{r}
+str(heartdata)
+```
+
+```{r}
+summary(heartdata)
+```
+->Heart attack is restricted not only for old people , it may even come for young people too. Here the average age is 54.
+
+->According to summary of gender , we can say that males are getting heart disease when compared to females having the mean 0.68.
+
+-> thalach variable says most of the people acheieved maximum heart rate.
+
+->Most people are suffering from the type of chest pain called typical angina(0) and atypical angina(1).
+
+->Very few people has exercise induced angina.
+
+->Target variable says half of the people are  diseased by heart attack.
+
+->Thalassemia variable says that most of the people has fixed defect.
+
+
+
+**Different way of visualizing the data
+```{r}
+library(corrplot)
+corr<-cor(heartdata)
+corrplot(corr,method= "number",type= "full")
+```
+-> From this correlation plot,  we can say that "thalach and cp are positively correlated with the target . It means whenever a person acheieved maximum heart rate and having severe chest pain , we can conclude that he is having heart attack.
+
+
+2.Exploratory data Analysis
+
+```{r}
+#Finding whether missing values pressent in our  or not
+sum(is.na(heartdata))
+```
+
+
+
+```{r}
+#Plotting all scatter plots with respect to target
+library(caret)
+featurePlot(x=heartdata[,c("age",  "thalach", "ca","cp", "thal", "sex",  "trestbps", "restecg","fbs","oldpeak")], y =heartdata$target)
+```
+
+
+```{r}
+#Plotting boxplots for each variable in the dataset.
+boxplot(heartdata[,4:8])
+
+```
+
+```{r}
+# Histogram of all the variables
+heartdata %>% 
+  gather(key = "var", value = "variables") %>%  
+  ggplot(aes(variables)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(~ var, scales = "free") +
+  theme_classic()
+```
+
+```{r}
+# Comparing age and cholesterol
+g_age_chol <- ggplot(heartdata,aes(x=age,y=chol))+
+    geom_point()+
+    geom_smooth(method = "lm", se = FALSE)+
+    scale_x_continuous(name="Age")+
+    scale_y_continuous(name="Cholestral Level")+
+    ggtitle("Age & Cholesterol")+
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+# Comparing age and max heart rate
+g_age_maxhr <- ggplot(heartdata,aes(x=age,y=thalach))+
+    geom_point()+geom_smooth(method = "lm", se= FALSE)+
+    scale_x_continuous(name="Age")+
+    scale_y_continuous(name="Max heart rate")+
+    ggtitle("Age & Max Heart Rate")+
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+
+g_age_chol
+#Here we can observe that many people have the cholestrol above around 230 , its bad to have that much cholestral. Age and cholestral are positively correlated.
+
+g_age_maxhr
+#Age and chol are positively correlated.
+
+```
+
+```{r}
+# total cases of heart diease (target = 1)
+ggplot(heartdata, aes(as.factor(target),fill=as.factor(target)))+
+  geom_bar(stat="count")+
+  guides(fill=F)+
+  labs(x="Target", y = "count", caption = "    0 = Absent
+    1 = Present")+
+  theme(plot.caption = element_text(hjust = 0.5))+
+  ggtitle("Presence and Absence of Heartattack")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Here we can see how many are having heartdiseases according to dataset.
+
+```
+
+
+```{r}
+#Plotting boxplots for each variable in the dataset.
+boxplot(heartdata[,4:8])
+```
+
+
+
+
+3. Creating Linear models 
+
+
+```{r}
+mod0<-lm(thalach~.,heartdata)
+summary(mod0)
+par(mfrow=c(2,2))
+plot(mod0)
+
+```
+
+```{r}
+step.model <- stepAIC(mod0,direction = "backward",trace = TRUE)
+summary(step.model)
+```
+
+**Here we come to know that what are all significant variables
+**slope,cp,exang,target  are all significant variables
+
+#Model1
+```{r}
+mod1<-lm(thalach ~ age + trestbps + chol + exang + slope + 
+    target + cp,data=heartdata[-c(255,298),])
+summary(mod1)
+par(mfrow=c(2,2))
+plot(mod1)
+shapiro.test(mod1$ residuals)
+```
+
+```{r}
+step.model <- stepAIC(mod1,direction = "backward",trace = TRUE)
+summary(step.model)
+```
+
+
+#Model2
+```{r}
+mod2<-lm(thalach ~ sex*thal+target+slope ,heartdata)
+summary(mod2)
+par(mfrow=c(2,2))
+plot(mod2)
+shapiro.test(mod2$ residuals)
+```
+
+
+#Model3
+```{r}
+mod3<-lm(thalach ~  cp + trestbps + chol + exang + slope + target,data=heartdata)
+summary(mod3)
+par(mfrow=c(2,2))
+plot(mod3)
+shapiro.test(mod3$ residuals)
+```
+
+
+
+#Model4
+```{r}
+mod4<-lm(thalach~cp+ca*oldpeak+sex*target,heartdata)
+summary(mod4)
+par(mfrow=c(2,2))
+plot(mod4)
+shapiro.test(mod4$ residuals)
+```
+
+
+```{r}
+library(broom)
+ summary_stats <- as_tibble(bind_rows(glance(mod1) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC),
+glance(mod2) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC),
+glance(mod3) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC),
+glance(mod4) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC)))
+summary_stats 
+```
+
+```{r}
+n1<-boxcox(thalach ~ age + trestbps + chol + exang + slope + 
+    target + cp,data=heartdata[-c(255,298,104,249), ])
+l1<-n1$x[which.max(n1$y)]
+heartdata$y<- ((heartdata$thalach)^l1-1/l1)
+bc_mod1<-lm(y~age + trestbps + chol + exang + slope + 
+    target + cp,data=heartdata[-c(255,298,104,29), ])
+summary(bc_mod1)
+par(mfrow=c(2,2))
+plot(bc_mod1)
+shapiro.test(bc_mod1$residuals)
+glance(bc_mod1) %>% dplyr::select(adj.r.squared,sigma,AIC,BIC)
+```
+
+
+
+```{r}
+data= sample_n(heartdata,5)#Taking some random samples from b_data
+predict=c(round(predict(mod1,data),digits=0))
+actual=data$thalach
+metrics = rbind(predict,actual)
+metrics
+```
+
+
+
+4. ANOVA
+
+
+-> ONE-WAY Anova test
+
+The null and alternative hypothesis of an ANOVA are:
+
+
+
+```{r}
+heartdata$c_p=0
+ heartdata$c_p[heartdata$cp==0] ="Zero"
+ heartdata$c_p[heartdata$cp==1] ="One"
+ heartdata$c_p[heartdata$cp==2] ="Two"
+ heartdata$c_p[heartdata$cp==3] ="Three"
+```
+
+```{r}
+selecter <- function(type){p_data =heartdata%>%filter(cp==type)
+return(sample_n(p_data,20))}
+```
+
+```{r}
+New_zero = selecter(0)
+New_one = selecter(1)
+New_two = selecter(2)
+New_three=selecter(3)
+New_data = bind_rows(New_zero,New_one,New_two,New_three)
+
+```
+
+```{r}
+res_aov <- aov(thalach~ c_p, New_data)
+summary(res_aov)
+```
+
+We can check normality visually:
+```{r}
+par(mfrow=c(1,2)) # combine plots
+
+# histogram
+hist(res_aov$residuals)
+
+qqnorm(res_aov$residuals,xlab = "norm quantiles")
+```
+
+```{r}
+shapiro.test(res_aov$residuals)
+```
+
+
+->From this , we can say that residuals are normal.
+
+Equality of variances
+
+Visually, we have
+```{r}
+# Boxplot
+boxplot(thalach~ c_p, data=heartdata)
+```
+
+```{r}
+# Dotplot from lattice library
+dotplot(thalach~ c_p, data =heartdata)
+```
+
+ 
+```{r}
+library(car)
+##As the sample sizes are same it is not necessary to perform Levene test as ANOVA do failry wel. But still lets do it.
+leveneTest(thalach~ c_p, New_data)
+#variances are not equal . accept alt hyp.
+
+```
+
+```{r}
+#$H_0:$ Variances are equal
+#$H_1:$ at least one varaince is different
+Final<- TukeyHSD(res_aov)
+Final
+plot(Final)
+
+```
+
+
+5.LOGISTIC REGRESSION MODELS
+
+#Dividing dataset into testing and training dataset
+```{r}
+set.seed(7032)
+index_data =  sample(nrow(heartdata), 220)
+train_data = heartdata[index_data, ]
+test_data = heartdata[-index_data, ]
+```
+
+```{r}
+dim(train_data)
+dim(test_data)
+```
+
+
+```{r}
+predict_fun= function(mod, data, res = "y", pos = 1, neg = 0, cut = 0.5) 
+  { 
+  probs <- predict(mod, newdata = data, type = "response")
+  ifelse(probs > cut, pos, neg)
+  }
+#'ifelse' returns a value with the same shape as 'test' which is
+#filled with elements selected from either 'yes' or 'no' depending
+#on whether the element of 'test' is 'TRUE' or 'FALSE'.
+
+```
+
+```{r}
+model =glm(exang~target+cp+cp*target,data=train_data,family='binomial')
+summary(model)
+
+```
+
+
+```{r}
+pscl::pR2(model)["McFadden"]
+car::vif(model)
+```
+
+```{r}
+mod_1p=predict_fun(model, data = train_data,res = "exang", pos =1 , neg = 0, cut = 0.5)
+
+mod_2p=predict_fun(model, data = train_data,res = "exang", pos = 1, neg = 0, cut = 0.3)
+
+mod_3p=predict_fun(model, data = train_data,res = "exang", pos = 1, neg = 0, cut = 0.6)
+```
+
+
+```{r}
+t1 =  table(predicted = mod_1p,actual = train_data$exang)
+t2 =  table(predicted = mod_2p,actual = train_data$exang)
+t3 =  table(predicted = mod_3p,actual = train_data$exang)
+CM_1=confusionMatrix(t1,positive='1')
+CM_2=confusionMatrix(t2,positive='1')
+CM_3=confusionMatrix(t3,positive='1')
+```
+
+
+```{r}
+Vector_1= c(CM_1$overall["Accuracy"],CM_1$byClass["Sensitivity"],CM_1$byClass["Specificity"])
+Vector_2= c(CM_2$overall["Accuracy"],CM_2$byClass["Sensitivity"],CM_2$byClass["Specificity"])
+Vector_3=c(CM_3$overall["Accuracy"],CM_3$byClass["Sensitivity"],CM_3$byClass["Specificity"])
+```
+
+```{r}
+metrics = rbind(Vector_1,Vector_2,Vector_3)
+rownames(metrics) = c("c = 0.3", "c = 0.5", "c = 0.6")
+metrics
+
+```
+
+```{r}
+predicted <- predict(model, train_data, type="response")
+optimal <- InformationValue::optimalCutoff(train_data$exang, predicted)
+optimal
+```
+
+
+```{r}
+Best_Model=predict_fun(model, data = train_data,res = "exang", pos =1 , neg = 0, cut = 0.4479537)
+Final_Table=  table(predicted = Best_Model,actual = train_data$exang)
+Final_CM=confusionMatrix(Final_Table,pos= '1' )
+Vector_1= c(Final_CM$overall["Accuracy"],Final_CM$byClass["Sensitivity"],Final_CM$byClass["Specificity"])
+Vector_1
+```
+
+
+
+
+```{r}
+mod=predict_fun(model, data = test_data,res = "exang", pos =1 , neg = 0, cut = 0.4479537)
+tes =  table(predicted = mod,actual = test_data$exang)
+cm=confusionMatrix(t1,positive='1')
+Final = c(cm$overall["Accuracy"],cm$byClass["Sensitivity"],cm$byClass["Specificity"])
+Final
+```
+

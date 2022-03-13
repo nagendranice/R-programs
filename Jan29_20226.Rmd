@@ -1,0 +1,44 @@
+---
+title: "Plots"
+author: "Bala"
+date: "29/01/2021"
+output: word_document
+editor_options: 
+  chunk_output_type: console
+---
+
+#Exercise 
+#1.Use basic plots: scatter plot, Histograms, Density functions , abline(), legend()...
+#2. Pi_charts and Box_Plots
+#3. dplyr: mutate(), mutate_at(),select(),pull(), sample_n()
+
+```{r}
+dataset<- iris
+head(iris)
+#sample_n(dataset)
+
+```
+```{r}
+#This creates the scatter plot
+plot(dataset$Sepal.Length,dataset$Sepal.Width)
+```
+```{r}
+#This creates Histogram plot...
+hist(dataset$Sepal.Length)
+```
+
+```{r}
+#Adds density curve to the histogram
+density(dataset$Sepal.Length)
+pie(head(dataset$Sepal.Width),head(dataset$Species))
+boxplot(head(dataset$Sepal.Length),head(dataset$Species))
+```
+```{r}
+#Creates pi chart for Sepal length and Species for first 6 entries
+pie(head(dataset$Sepal.Length),head(dataset$Species))
+```
+```{r}
+#Creates box plot for first 6 entries using Sepal Width and Species columns
+boxplot(head(dataset$Sepal.Width),head(dataset$Species))
+```
+
